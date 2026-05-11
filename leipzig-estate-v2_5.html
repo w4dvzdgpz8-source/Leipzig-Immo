@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEIPZIG | estate – Ihre Immobilienexperten</title>
+<link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Jost:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --navy:#0d1b2a;--navy-mid:#142233;--navy-light:#1a2e45;
+  --gold:#c9a84c;--gold-light:#e2c47a;--gold-dark:#9a7a2e;
+  --cream:#f7f4ef;--cream-dark:#ede8df;
+  --text:#1a1a1a;--muted:#6b6560;--white:#fff;
+}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;width:100%;z-index:300;padding:1.1rem 3rem;display:flex;align-items:center;justify-content:space-between;transition:all 0.4s}
+nav.scrolled{background:rgba(13,27,42,0.97);padding:0.65rem 3rem;border-bottom:1px solid rgba(201,168,76,0.2)}
+nav.on-page{background:rgba(247,244,239,0.98);border-bottom:1px solid var(--cream-dark);padding:0.65rem 3rem}
+.nav-brand{text-decoration:none;display:flex;flex-direction:column}
+.nav-brand-title{font-family:'Tenor Sans',serif;font-size:1.1rem;letter-spacing:0.12em;color:#fff;text-transform:uppercase;transition:color 0.3s}
+.nav-brand-title span{color:var(--gold)}
+nav.on-page .nav-brand-title{color:var(--navy)}
+.nav-brand-sub{font-size:0.6rem;letter-spacing:0.3em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:1px;transition:color 0.3s}
+nav.on-page .nav-brand-sub{color:var(--muted)}
+.nav-links{display:flex;gap:1.8rem;list-style:none;align-items:center}
+.nav-links a{font-size:0.72rem;font-weight:500;color:rgba(255,255,255,0.8);text-decoration:none;letter-spacing:0.15em;text-transform:uppercase;transition:color 0.3s;position:relative}
+nav.on-page .nav-links a{color:var(--navy)}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--gold);transition:width 0.3s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold-light)}
+nav.on-page .nav-links a:hover,nav.on-page .nav-links a.active{color:var(--gold-dark)}
+.nav-links a:hover::after,.nav-links a.active::after{width:100%}
+.nav-dropdown{position:relative}
+.nav-dropdown-menu{display:none;position:absolute;top:100%;left:0;background:var(--navy);border:1px solid rgba(201,168,76,0.2);min-width:220px;padding:0.8rem 0 0.5rem;z-index:400;margin-top:0}
+.nav-dropdown-menu::before{content:'';position:absolute;top:-10px;left:0;right:0;height:10px;background:transparent}
+.nav-dropdown:hover .nav-dropdown-menu{display:block}
+.nav-dropdown-menu a{display:block;padding:0.55rem 1.2rem;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.75) !important;text-decoration:none;transition:background 0.2s,color 0.2s}
+.nav-dropdown-menu a:hover{background:rgba(201,168,76,0.15);color:var(--gold-light) !important}
+.nav-dropdown-menu a::after{display:none !important}
+
+/* HERO */
+.hero{position:relative;height:100vh;min-height:620px;overflow:hidden;display:flex;align-items:flex-end}
+.hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 2s ease}
+.hero-slide.active{opacity:1}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(105deg,rgba(13,27,42,0.85) 0%,rgba(13,27,42,0.45) 55%,rgba(13,27,42,0.15) 100%)}
+.hero-content{position:relative;z-index:2;padding:0 3rem 5rem;max-width:700px}
+.hero-eyebrow{font-family:'Cormorant Garamond',serif;font-size:0.85rem;letter-spacing:0.5em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem}
+.hero-eyebrow::before{content:'';width:40px;height:1px;background:var(--gold)}
+.hero-title{font-family:'Tenor Sans',serif;font-size:clamp(2.8rem,6vw,5.5rem);color:#fff;line-height:1.05;letter-spacing:-0.01em}
+.hero-title em{color:var(--gold-light);font-style:normal}
+.hero-sub{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;color:#fff;margin-top:1.2rem;line-height:1.6;max-width:480px}
+.hero-ctas{display:flex;gap:1rem;margin-top:2.5rem;flex-wrap:wrap}
+.btn-primary{font-family:'Jost',sans-serif;font-size:0.72rem;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;padding:0.9rem 2rem;background:var(--gold);color:var(--navy);text-decoration:none;border:none;cursor:pointer;transition:background 0.3s}
+.btn-primary:hover{background:var(--gold-light)}
+.btn-outline{font-family:'Jost',sans-serif;font-size:0.72rem;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;padding:0.9rem 2rem;background:none;color:#fff;border:1px solid rgba(255,255,255,0.4);text-decoration:none;transition:all 0.3s;cursor:pointer}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.hero-stats{position:absolute;right:3rem;bottom:5rem;z-index:2;display:flex;flex-direction:column;gap:1.5rem;text-align:right}
+.hero-stat-num{font-family:'Tenor Sans',serif;font-size:2.2rem;color:var(--gold-light);line-height:1}
+.hero-stat-label{font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-top:2px}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:0.5rem;color:rgba(255,255,255,0.4);font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase}
+.scroll-line{width:1px;height:36px;background:linear-gradient(to bottom,rgba(201,168,76,0.7),transparent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* PAGES */
+.page-section{display:none}
+.page-section.active{display:block}
+.section-header{text-align:center;padding:5rem 2rem 2.5rem}
+.section-tag{font-size:0.7rem;letter-spacing:0.45em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.8rem}
+.section-title{font-family:'Tenor Sans',serif;font-size:clamp(1.8rem,3.5vw,3rem);color:var(--navy);line-height:1.15}
+.section-desc{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;font-style:italic;color:var(--muted);max-width:520px;margin:1rem auto 0;line-height:1.7}
+.divider{display:flex;align-items:center;gap:1.2rem;margin:1.5rem auto;max-width:280px}
+.div-line{flex:1;height:1px;background:linear-gradient(to right,transparent,var(--gold-dark))}
+.div-line.r{background:linear-gradient(to left,transparent,var(--gold-dark))}
+.div-diamond{width:6px;height:6px;border:1px solid var(--gold);transform:rotate(45deg);flex-shrink:0}
+
+/* SEARCH */
+.search-bar{background:var(--navy);padding:1.8rem 3rem;display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap}
+.sg{display:flex;flex-direction:column;gap:0.4rem;flex:1;min-width:150px}
+.sg label{font-size:0.62rem;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.4)}
+.sg select,.sg input{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:0.65rem 1rem;font-family:'Jost',sans-serif;font-size:0.85rem;outline:none;transition:border 0.3s;-webkit-appearance:none;border-radius:0}
+.sg select:focus,.sg input:focus{border-color:var(--gold)}
+.sg select option{background:var(--navy);color:#fff}
+.search-btn{background:var(--gold);border:none;color:var(--navy);padding:0.65rem 2rem;font-family:'Jost',sans-serif;font-size:0.72rem;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:background 0.3s}
+.search-btn:hover{background:var(--gold-light)}
+
+/* PROPERTIES */
+.props-section{background:var(--cream);padding:0 2rem 4rem}
+.props-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:1.5rem}
+.prop-card{background:#fff;border:1px solid var(--cream-dark);overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity 0.6s,transform 0.6s,box-shadow 0.3s}
+.prop-card.visible{opacity:1;transform:translateY(0)}
+.prop-card:hover{box-shadow:0 10px 36px rgba(13,27,42,0.1);transform:translateY(-4px) !important}
+.prop-img{position:relative;height:205px;overflow:hidden}
+.prop-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.5s}
+.prop-card:hover .prop-img img{transform:scale(1.04)}
+.pbadge{position:absolute;top:12px;left:12px;font-size:0.62rem;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;padding:3px 10px}
+.pk{background:var(--navy);color:var(--gold-light)}
+.pm{background:var(--gold);color:var(--navy)}
+.pbadge2{position:absolute;top:12px;right:12px;font-size:0.58rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;padding:2px 8px}
+.pneu{background:#fff;color:var(--navy)}
+.pex{background:var(--gold-dark);color:#fff}
+.prop-body{padding:1.3rem}
+.prop-type{font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.35rem}
+.prop-title{font-family:'Tenor Sans',serif;font-size:1.02rem;color:var(--navy);line-height:1.3;margin-bottom:0.55rem}
+.prop-loc{font-size:0.78rem;color:var(--muted);margin-bottom:0.9rem}
+.prop-loc::before{content:'◈ ';color:var(--gold);font-size:0.6rem}
+.prop-meta{display:flex;gap:1rem;border-top:1px solid var(--cream-dark);padding-top:0.85rem}
+.pmi{display:flex;flex-direction:column;gap:2px}
+.pmi-val{font-family:'Tenor Sans',serif;font-size:0.82rem;color:var(--navy)}
+.pmi-lab{font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+.pprice{margin-left:auto;text-align:right}
+.pprice-val{font-family:'Tenor Sans',serif;font-size:1.05rem;color:var(--gold-dark)}
+.props-count{max-width:1100px;margin:0 auto 1.2rem;font-family:'Cormorant Garamond',serif;font-size:1rem;font-style:italic;color:var(--muted)}
+
+/* MAP */
+.map-section{background:var(--cream);padding:0 2rem 4rem}
+.map-section-title{max-width:1100px;margin:0 auto 1.2rem;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0.5rem}
+.map-toggle{display:flex;gap:8px}
+.map-toggle-btn{font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;padding:5px 14px;border:1px solid var(--cream-dark);background:none;cursor:pointer;color:var(--muted);transition:all 0.2s}
+.map-toggle-btn.active{background:var(--navy);color:var(--gold-light);border-color:var(--navy)}
+#prop-map,#branch-map{width:100%;max-width:1100px;margin:0 auto;height:440px;border:1px solid var(--cream-dark);display:block}
+#branch-map{display:none}
+.leaflet-popup-content-wrapper{border-radius:0;border:1px solid var(--gold-dark);font-family:'Jost',sans-serif}
+.leaflet-popup-content{margin:10px 14px;font-size:12px;line-height:1.5}
+.popup-title{font-family:'Tenor Sans',serif;font-size:13px;color:var(--navy);margin-bottom:4px}
+.popup-price{color:var(--gold-dark);font-weight:500}
+.popup-branch{font-family:'Tenor Sans',serif;font-size:13px;color:var(--navy);margin-bottom:3px}
+.popup-branch-sub{font-size:11px;color:var(--muted)}
+
+/* TEAM */
+.team-section{background:var(--navy);padding:0 2rem 4rem}
+.team-section .section-title{color:#fff}
+.team-section .section-desc{color:rgba(255,255,255,0.5)}
+.team-grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1.5rem}
+.team-card{text-align:center;opacity:0;transform:translateY(18px);transition:opacity 0.6s,transform 0.6s}
+.team-card.visible{opacity:1;transform:translateY(0)}
+.team-avatar{width:110px;height:110px;border-radius:50%;object-fit:cover;margin:0 auto 0.9rem;border:2px solid rgba(201,168,76,0.3);display:block;background:var(--navy-light)}
+.team-init{width:110px;height:110px;border-radius:50%;margin:0 auto 0.9rem;border:2px solid rgba(201,168,76,0.3);display:flex;align-items:center;justify-content:center;background:var(--navy-light);font-family:'Tenor Sans',serif;font-size:1.4rem;color:var(--gold)}
+.team-name{font-family:'Tenor Sans',serif;font-size:0.97rem;color:#fff;margin-bottom:0.25rem}
+.team-role{font-family:'Cormorant Garamond',serif;font-size:0.83rem;font-style:italic;color:rgba(255,255,255,0.42);line-height:1.4;margin-bottom:0.5rem}
+.team-tel a{font-size:0.7rem;color:var(--gold);text-decoration:none;letter-spacing:0.08em}
+.team-tel a:hover{color:var(--gold-light)}
+
+/* BRANCHES */
+.branches-section{background:var(--cream);padding:0 2rem 4rem}
+.branches-grid{max-width:1060px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.4rem}
+.branch-card{background:#fff;border:1px solid var(--cream-dark);overflow:hidden;transition:border-color 0.3s,transform 0.3s;opacity:0;transform:translateY(14px);display:flex;flex-direction:column}
+.branch-card.visible{opacity:1;transform:translateY(0)}
+.branch-card:hover{border-color:var(--gold);transform:translateY(-3px)}
+.branch-img{width:100%;height:160px;object-fit:cover;filter:grayscale(15%);transition:filter 0.3s;display:block}
+.branch-card:hover .branch-img{filter:grayscale(0%)}
+.branch-body{padding:1rem 1.1rem 1.2rem;flex:1;display:flex;flex-direction:column;gap:0.3rem}
+.branch-name{font-family:'Tenor Sans',serif;font-size:1rem;color:var(--navy)}
+.branch-region{font-size:0.65rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold-dark)}
+.branch-detail{font-size:0.78rem;color:var(--muted);line-height:1.55;margin-top:0.3rem}
+.branch-link{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dark);text-decoration:none;border-bottom:1px solid var(--gold-dark);padding-bottom:1px;transition:color 0.2s;margin-top:auto;padding-top:0.6rem;width:fit-content}
+.branch-link:hover{color:var(--navy);border-color:var(--navy)}
+
+/* ÜBER UNS */
+.about-section{background:#fff;padding:0 2rem 4rem}
+.about-inner{max-width:920px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start}
+.about-text h3{font-family:'Tenor Sans',serif;font-size:1.4rem;color:var(--navy);margin-bottom:1rem}
+.about-text p{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-weight:300;color:var(--text);line-height:1.8;margin-bottom:1rem}
+.about-text em{color:var(--gold-dark);font-style:italic}
+.about-stats{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1rem}
+.astat{background:var(--cream);border-left:3px solid var(--gold);padding:1.1rem 1.3rem;border-radius:0}
+.astat-num{font-family:'Tenor Sans',serif;font-size:1.9rem;color:var(--navy);line-height:1}
+.astat-lab{font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.ivd-row{display:flex;align-items:center;gap:1rem;margin-top:1.5rem;padding:0.9rem 1.2rem;border:1px solid var(--cream-dark);background:var(--cream)}
+.ivd-row img{height:38px}
+.ivd-row span{font-size:0.8rem;color:var(--muted);line-height:1.45}
+
+/* SUB PAGES */
+.subpage-section{background:var(--cream);padding:0 2rem 4rem}
+.subpage-inner{max-width:820px;margin:0 auto}
+.subpage-inner h3{font-family:'Tenor Sans',serif;font-size:1.3rem;color:var(--navy);margin:2rem 0 0.8rem;padding-bottom:0.6rem;border-bottom:1px solid var(--cream-dark)}
+.subpage-inner p{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-weight:300;color:var(--text);line-height:1.8;margin-bottom:1rem}
+.subpage-inner ul{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:300;color:var(--text);line-height:1.8;margin-left:1.5rem;margin-bottom:1rem}
+.subpage-inner ul li{margin-bottom:0.3rem}
+.karriere-form{background:#fff;border:1px solid var(--cream-dark);padding:2rem;margin-top:1.5rem}
+.karriere-form h4{font-family:'Tenor Sans',serif;font-size:1.1rem;color:var(--navy);margin-bottom:1.2rem}
+
+/* KONTAKT */
+.kontakt-section{background:var(--navy);padding:0 2rem 4rem}
+.kontakt-section .section-title{color:#fff}
+.kontakt-inner{max-width:960px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:2.5rem}
+.kbox{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:2.2rem}
+.kbox h3{font-family:'Tenor Sans',serif;font-size:1.15rem;color:#fff;margin-bottom:1.3rem;padding-bottom:0.9rem;border-bottom:1px solid rgba(255,255,255,0.08)}
+.krow{display:flex;gap:1rem;padding:0.65rem 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.klab{font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold-dark);min-width:90px;padding-top:2px}
+.kval{font-size:0.88rem;color:rgba(255,255,255,0.65);line-height:1.6}
+.kval a{color:var(--gold);text-decoration:none}
+.kval a:hover{color:var(--gold-light)}
+.kmap{border:1px solid rgba(255,255,255,0.08);overflow:hidden}
+.kmap iframe{width:100%;height:380px;display:block;border:none}
+
+/* CONTACT FORM */
+.cform{display:flex;flex-direction:column;gap:1rem;margin-top:1rem}
+.cform-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.cfield{display:flex;flex-direction:column;gap:0.4rem}
+.cfield label{font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;color:rgba(255,255,255,0.4)}
+.cfield input,.cfield select,.cfield textarea{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:0.65rem 1rem;font-family:'Jost',sans-serif;font-size:0.85rem;outline:none;transition:border 0.3s;border-radius:0}
+.cfield input:focus,.cfield select:focus,.cfield textarea:focus{border-color:var(--gold)}
+.cfield textarea{resize:vertical;min-height:90px}
+.cfield select option{background:var(--navy)}
+.cform-btn{background:var(--gold);border:none;color:var(--navy);padding:0.8rem 2.5rem;font-family:'Jost',sans-serif;font-size:0.72rem;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;transition:background 0.3s;width:fit-content}
+.cform-btn:hover{background:var(--gold-light)}
+
+/* FOOTER */
+footer{background:rgba(8,16,26,0.99);border-top:1px solid rgba(201,168,76,0.2);padding:2.5rem 3rem 2rem}
+.foot-inner{max-width:1100px;margin:0 auto}
+.foot-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2.5rem;padding-bottom:2rem;border-bottom:1px solid rgba(255,255,255,0.06)}
+.foot-brand{font-family:'Tenor Sans',serif;font-size:1.1rem;letter-spacing:0.12em;text-transform:uppercase;color:#fff;margin-bottom:0.5rem}
+.foot-brand span{color:var(--gold)}
+.foot-tagline{font-size:0.72rem;letter-spacing:0.25em;color:var(--gold-dark);text-transform:uppercase;margin-bottom:1rem}
+.foot-desc{font-family:'Cormorant Garamond',serif;font-size:0.9rem;color:rgba(255,255,255,0.4);line-height:1.7}
+.foot-col-title{font-size:0.65rem;letter-spacing:0.35em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.foot-col a{display:block;font-size:0.82rem;color:rgba(255,255,255,0.45);text-decoration:none;line-height:2;transition:color 0.2s}
+.foot-col a:hover{color:var(--gold-light)}
+.foot-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;flex-wrap:wrap;gap:0.5rem}
+.foot-copy{font-size:0.72rem;color:rgba(255,255,255,0.2);letter-spacing:0.06em}
+.foot-legal{display:flex;gap:1.5rem}
+.foot-legal a{font-size:0.68rem;color:rgba(255,255,255,0.3);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase}
+.foot-legal a:hover{color:var(--gold)}
+
+/* PROPERTY DETAIL */
+#section-propdetail{background:var(--cream)}
+.pd-back{display:inline-flex;align-items:center;gap:0.5rem;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dark);text-decoration:none;border:none;background:none;cursor:pointer;padding:0;margin-bottom:2rem}
+.pd-back:hover{color:var(--navy)}
+.pd-hero{width:100%;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr;gap:2rem;align-items:start}
+.pd-img-main{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid var(--cream-dark)}
+.pd-sidebar{display:flex;flex-direction:column;gap:1.2rem}
+.pd-badge-row{display:flex;gap:8px;flex-wrap:wrap}
+.pd-badge{font-size:0.65rem;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;padding:4px 12px}
+.pd-badge-art{background:var(--navy);color:var(--gold-light)}
+.pd-badge-type{background:var(--cream-dark);color:var(--navy)}
+.pd-badge-special{background:var(--gold);color:var(--navy)}
+.pd-price{font-family:'Tenor Sans',serif;font-size:2.2rem;color:var(--navy);line-height:1}
+.pd-price-label{font-size:0.65rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.pd-title{font-family:'Tenor Sans',serif;font-size:1.5rem;color:var(--navy);line-height:1.25}
+.pd-loc{font-size:0.9rem;color:var(--muted)}
+.pd-loc::before{content:'◈ ';color:var(--gold)}
+.pd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--cream-dark)}
+.pd-stat{padding:1rem;text-align:center;border-right:1px solid var(--cream-dark)}
+.pd-stat:last-child{border-right:none}
+.pd-stat-val{font-family:'Tenor Sans',serif;font-size:1.2rem;color:var(--navy)}
+.pd-stat-lab{font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.pd-cta-row{display:flex;flex-direction:column;gap:0.8rem}
+.pd-body{max-width:1100px;margin:2.5rem auto 0;display:grid;grid-template-columns:1.4fr 1fr;gap:2rem}
+.pd-desc h3{font-family:'Tenor Sans',serif;font-size:1.1rem;color:var(--navy);margin-bottom:1rem;padding-bottom:0.6rem;border-bottom:1px solid var(--cream-dark)}
+.pd-desc p{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-weight:300;color:var(--text);line-height:1.8;margin-bottom:1rem}
+.pd-details{background:#fff;border:1px solid var(--cream-dark);padding:1.5rem}
+.pd-details h3{font-family:'Tenor Sans',serif;font-size:1rem;color:var(--navy);margin-bottom:1rem;padding-bottom:0.6rem;border-bottom:1px solid var(--cream-dark)}
+.pd-detail-row{display:flex;justify-content:space-between;padding:0.6rem 0;border-bottom:1px dotted var(--cream-dark);font-size:0.85rem}
+.pd-detail-row:last-child{border-bottom:none}
+.pd-detail-label{color:var(--muted)}
+.pd-detail-val{font-weight:500;color:var(--navy)}
+.pd-contact{background:var(--navy);padding:1.5rem;margin-top:1.5rem}
+.pd-contact h3{font-family:'Tenor Sans',serif;font-size:1rem;color:#fff;margin-bottom:1.2rem}
+.pd-contact .cfield label{color:rgba(255,255,255,0.4)}
+.pd-contact .cfield input,.pd-contact .cfield textarea{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:0.6rem 0.9rem;font-family:'Jost',sans-serif;font-size:0.82rem;outline:none;transition:border 0.3s;border-radius:0;width:100%}
+.pd-contact .cfield input:focus,.pd-contact .cfield textarea:focus{border-color:var(--gold)}
+.pd-contact .cfield textarea{resize:vertical;min-height:80px}
+.btn-ext{display:inline-flex;align-items:center;gap:0.5rem;font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--cream-dark);padding:0.7rem 1.2rem;transition:all 0.3s;background:#fff;cursor:pointer}
+.btn-ext:hover{border-color:var(--gold-dark);color:var(--gold-dark)}
+@media(max-width:720px){
+  .pd-hero,.pd-body{grid-template-columns:1fr}
+  .pd-stats{grid-template-columns:repeat(3,1fr)}
+  nav{padding:0.8rem 1.2rem}
+  nav.scrolled,nav.on-page{padding:0.55rem 1.2rem}
+  .nav-links{display:none}
+  .hero-content{padding:0 1.5rem 4rem}
+  .hero-stats{display:none}
+  .about-inner,.kontakt-inner,.cform-row{grid-template-columns:1fr}
+  .foot-top{grid-template-columns:1fr 1fr}
+  .branch-card{grid-template-columns:1fr}
+  .branch-img{height:140px;width:100%}
+}
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <a class="nav-brand" href="#" onclick="return showSection('home')">
+    <span class="nav-brand-title">LEIPZIG <span>|</span> estate</span>
+    <span class="nav-brand-sub">Ihre Immobilienexperten</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#" onclick="return showSection('home')" id="nav-home" class="active">Home</a></li>
+    <li><a href="#" onclick="return showSection('immobilien')" id="nav-immobilien">Immobilien</a></li>
+    <li class="nav-dropdown">
+      <a href="#" onclick="return showSection('about')" id="nav-about">Über Uns ▾</a>
+      <div class="nav-dropdown-menu">
+        <a href="#" onclick="return showSection('about')">Wir über uns</a>
+        <a href="#" onclick="return showSection('team')">Das Team</a>
+        <a href="#" onclick="return showSection('philosophie')">Philosophie</a>
+        <a href="#" onclick="return showSection('firmengeschichte')">Firmengeschichte</a>
+        <a href="#" onclick="return showSection('karriere')">Karriere</a>
+      </div>
+    </li>
+    <li class="nav-dropdown">
+      <a href="#" onclick="return showSection('branches')" id="nav-branches">Niederlassungen ▾</a>
+      <div class="nav-dropdown-menu">
+        <a href="https://leipzig-estate.com/leipzig/" target="_blank">Leipzig Stadt</a>
+        <a href="https://leipzig-estate.com/taucha/" target="_blank">Taucha</a>
+        <a href="https://leipzig-estate.com/borna/" target="_blank">Borna</a>
+        <a href="https://leipzig-estate.com/groitzsch/" target="_blank">Groitzsch · Lucka · Meuselwitz</a>
+        <a href="https://leipzig-estate.com/bad-duerrenberg/" target="_blank">Bad Dürrenberg</a>
+        <a href="https://leipzig-estate.com/torgau/" target="_blank">Torgau · Jessen</a>
+      </div>
+    </li>
+    <li><a href="#" onclick="return showSection('kontakt')" id="nav-kontakt">Kontakt</a></li>
+  </ul>
+</nav>
+
+<!-- ══ HOME ══ -->
+<div id="section-home" class="page-section active">
+  <section class="hero">
+    <div class="hero-slide active" style="background-image:url('https://leipzig-estate.com/wp-content/uploads/2020/10/slider_1-1.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('https://leipzig-estate.com/wp-content/uploads/2020/10/slider_2-1.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('https://leipzig-estate.com/wp-content/uploads/2020/10/new-town-hall-2390916_1280.jpg')"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Seit 1998 in Leipzig</p>
+      <h1 class="hero-title">Ihr Weg zur<br><em>Traumimmobilie</em><br>in Leipzig</h1>
+      <p class="hero-sub">Kompetenz, Erfahrung und Leidenschaft – für Käufer, Verkäufer, Vermieter und Mieter.</p>
+      <div class="hero-ctas">
+        <a href="#" class="btn-primary" onclick="return showSection('immobilien')">Immobilien entdecken</a>
+        <a href="#" class="btn-outline" onclick="return showSection('kontakt')">Kostenlose Beratung</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-num">47</div><div class="hero-stat-label">Aktuelle Angebote</div></div>
+      <div><div class="hero-stat-num">8</div><div class="hero-stat-label">Filialen in Sachsen</div></div>
+      <div><div class="hero-stat-num">25+</div><div class="hero-stat-label">Jahre Erfahrung</div></div>
+    </div>
+    <div class="scroll-hint" onclick="showSection('immobilien')"><span>Entdecken</span><div class="scroll-line"></div></div>
+  </section>
+
+  <div class="search-bar">
+    <div class="sg"><label>Vermarktungsart</label><select><option>Alle</option><option>Kauf</option><option>Miete</option></select></div>
+    <div class="sg"><label>Objektart</label><select><option>Alle Typen</option><option>Haus</option><option>Wohnung</option><option>Büro / Gewerbe</option><option>Grundstück</option></select></div>
+    <div class="sg"><label>Standort</label><input type="text" placeholder="Stadt oder PLZ…"></div>
+    <button class="search-btn" onclick="showSection('immobilien')">Suchen</button>
+  </div>
+
+  <div class="props-section" style="padding-top:2.5rem">
+    <div style="max-width:1100px;margin:0 auto 1.2rem;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0.5rem">
+      <div><p class="section-tag" style="text-align:left;padding:0;margin-bottom:0.25rem">Highlights</p><h2 style="font-family:'Tenor Sans',serif;font-size:1.5rem;color:var(--navy)">Ausgewählte Immobilien</h2></div>
+      <a href="#" onclick="return showSection('immobilien')" style="font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dark);text-decoration:none;border-bottom:1px solid var(--gold-dark)">Alle 47 anzeigen →</a>
+    </div>
+    <div class="props-grid" id="featured-grid"></div>
+  </div>
+</div>
+
+<!-- ══ IMMOBILIEN ══ -->
+<div id="section-immobilien" class="page-section">
+  <div class="section-header">
+    <p class="section-tag">Immobilienübersicht</p>
+    <h2 class="section-title">47 aktuelle Angebote</h2>
+    <p class="section-desc">Von der Eigentumswohnung bis zum Gewerbeobjekt – in Leipzig und ganz Sachsen.</p>
+    <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line r"></div></div>
+  </div>
+  <div class="search-bar">
+    <div class="sg"><label>Vermarktungsart</label><select id="fa"><option value="all">Alle</option><option value="kauf">Kauf</option><option value="miete">Miete</option></select></div>
+    <div class="sg"><label>Objektart</label><select id="ft"><option value="all">Alle Typen</option><option value="haus">Haus</option><option value="wohnung">Wohnung</option><option value="buero">Büro / Gewerbe</option><option value="grundstueck">Grundstück</option></select></div>
+    <button class="search-btn" onclick="renderProps()">Filtern</button>
+  </div>
+  <div class="props-section" style="padding-top:1.5rem">
+    <p class="props-count" id="pcount"></p>
+    <div class="props-grid" id="all-grid"></div>
+  </div>
+
+  <!-- PROPERTY MAP -->
+  <div class="map-section">
+    <div class="map-section-title">
+      <div><p class="section-tag" style="text-align:left;padding:0;margin-bottom:0.2rem">Kartenansicht</p><h3 style="font-family:'Tenor Sans',serif;font-size:1.3rem;color:var(--navy)">Immobilien auf der Karte</h3></div>
+      <div class="map-toggle">
+        <button class="map-toggle-btn active" onclick="toggleMap('prop',this)">Objekte</button>
+        <button class="map-toggle-btn" onclick="toggleMap('branch',this)">Filialen</button>
+      </div>
+    </div>
+    <div id="prop-map"></div>
+    <div id="branch-map"></div>
+  </div>
+</div>
+
+<!-- ══ TEAM ══ -->
+<div id="section-team" class="page-section">
+  <div class="team-section">
+    <div class="section-header" style="background:transparent">
+      <p class="section-tag" style="color:var(--gold)">Unser Team</p>
+      <h2 class="section-title" style="color:#fff">Ihre Ansprechpartner</h2>
+      <p class="section-desc" style="color:rgba(255,255,255,0.45)">Sechs selbständige Experten. Eine gemeinsame Mission.</p>
+      <div class="divider" style="margin-top:1.2rem"><div class="div-line" style="background:linear-gradient(to right,transparent,rgba(201,168,76,0.4))"></div><div class="div-diamond" style="border-color:rgba(201,168,76,0.4)"></div><div class="div-line r" style="background:linear-gradient(to left,transparent,rgba(201,168,76,0.4))"></div></div>
+    </div>
+    <div class="team-grid">
+      <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/elementor/thumbs/leipzig_estate_ivonne_tews-rf6nqbvai8cys8zrd2gm64odx4incy5wxksqzz8clc.jpg" alt="Ivonne Tews" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">IT</div><div class="team-name">Ivonne Tews</div><div class="team-role">Geschäftsführerin · Kauffrau Grundstücks- &amp; Wohnungswirtschaft · Sachverständige</div><div class="team-tel"><a href="tel:+493419047973">0341 – 904 79 73</a></div></div>
+      <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/elementor/thumbs/leipzig_estate_jan_ohnesorge-rfj6si0pyj6wq056ulur8zfcxyn2enkrt27h9sqfgg.jpg" alt="Jan Ohnesorge" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">JO</div><div class="team-name">Jan Ohnesorge</div><div class="team-role">Selbständiger Immobilienmakler · Filiale Taucha</div><div class="team-tel"><a href="tel:+493419047967">0341 – 904 79 67</a></div></div>
+      <div class="team-card"><div class="team-init">AK</div><div class="team-name">André Kupferschmied</div><div class="team-role">Selbständiger Immobilienmakler · Dipl.-Ing. Architektur (FH)</div><div class="team-tel"><a href="tel:+493419047968">0341 – 904 79 68</a></div></div>
+      <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/2021/10/anscheit.png" alt="René Anscheit" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">RA</div><div class="team-name">René Anscheit</div><div class="team-role">Selbständiger Immobilienmakler · Bachelor Real Estate Management · Immobilienfachwirt</div><div class="team-tel"><a href="tel:+493419047971">0341 – 904 79 71</a></div></div>
+      <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/2021/10/olma.png" alt="Maria Olma" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">MO</div><div class="team-name">Maria Olma</div><div class="team-role">Selbständige Immobilienmaklerin · Immobilienfachwirtin</div><div class="team-tel"><a href="tel:+4917610312538">0176 – 10 31 25 38</a></div></div>
+      <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/2021/10/Slowikowski.png" alt="Carolin Slowikowski" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">CS</div><div class="team-name">Carolin Slowikowski</div><div class="team-role">Selbständige Immobilienmaklerin · Immobilienfachwirtin</div><div class="team-tel"><a href="tel:+4917841423 13">0178 – 414 23 13</a></div></div>
+    </div>
+    <div style="max-width:1000px;margin:3rem auto 0;padding-top:2rem;border-top:1px solid rgba(255,255,255,0.07)">
+      <p style="font-family:'Cormorant Garamond',serif;font-size:0.82rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:1rem">Partner</p>
+      <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap">
+        <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/2021/10/werner.png" alt="Lutz Werner" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">LW</div><div class="team-name">Lutz Werner</div><div class="team-role">Selbständiger Immobilienmakler · Gründer</div><div class="team-tel"><a href="tel:+491728750323">0172 – 875 03 23</a></div></div>
+        <div class="team-card"><img class="team-avatar" src="https://leipzig-estate.com/wp-content/uploads/2021/10/strunk.png" alt="Heike Strunk" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="team-init" style="display:none">HS</div><div class="team-name">Heike Strunk</div><div class="team-role">Selbständige Immobilienmaklerin · Immobilienfachwirtin · Gutachterin</div><div class="team-tel"><a href="tel:+493411259858">0341 – 12 59 85 89</a></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BRANCHES ══ -->
+<div id="section-branches" class="page-section">
+  <div class="section-header">
+    <p class="section-tag">Unsere Standorte</p>
+    <h2 class="section-title">8 Filialen in Sachsen &amp; Sachsen-Anhalt</h2>
+    <p class="section-desc">Lokal verankert – regional kompetent.</p>
+    <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line r"></div></div>
+  </div>
+  <div class="branches-section">
+    <div class="branches-grid">
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2020/10/new-town-hall-2390916_1280.jpg" alt="Leipzig"><div class="branch-body"><div class="branch-name">Leipzig</div><div class="branch-region">Hauptfiliale · Sachsen</div><div class="branch-detail">Waldstraße 55, 04105 Leipzig<br>Tel: 0341 – 904 79 60<br>leipzig@leipzig-estate.com</div><a href="https://leipzig-estate.com/leipzig/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2020/10/800px-Taucha_Rathaus-02.jpg" alt="Taucha"><div class="branch-body"><div class="branch-name">Taucha</div><div class="branch-region">Nordsachsen · Jan Ohnesorge</div><div class="branch-detail">Tel: 0341 – 904 79 67<br>jan.ohnesorge@leipzig-estate.de</div><a href="https://leipzig-estate.com/taucha/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2020/10/borna.jpg" alt="Borna"><div class="branch-body"><div class="branch-name">Borna</div><div class="branch-region">Landkreis Leipzig · Sachsen</div><div class="branch-detail">Landkreis Leipzig Süd<br>info@leipzig-estate.de</div><a href="https://leipzig-estate.com/borna/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2020/10/800px-Groitzsch.jpg" alt="Groitzsch"><div class="branch-body"><div class="branch-name">Groitzsch · Lucka · Meuselwitz</div><div class="branch-region">Altenburger Land &amp; Landkreis Leipzig</div><div class="branch-detail">Region Südwest Leipzig<br>info@leipzig-estate.de</div><a href="https://leipzig-estate.com/groitzsch/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2020/10/800px-Bad_Duerrenberg_Gradierwerk-02.jpg" alt="Bad Dürrenberg"><div class="branch-body"><div class="branch-name">Bad Dürrenberg</div><div class="branch-region">Saalekreis · Sachsen-Anhalt</div><div class="branch-detail">Saalekreis Region<br>info@leipzig-estate.de</div><a href="https://leipzig-estate.com/bad-duerrenberg/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2021/10/architecture-gce328bd96_640.jpg" alt="Torgau"><div class="branch-body"><div class="branch-name">Torgau · Jessen</div><div class="branch-region">Nordsachsen · Wittenberg</div><div class="branch-detail">Elberegion Nordsachsen<br>info@leipzig-estate.de</div><a href="https://leipzig-estate.com/torgau/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2023/03/delitzsch-gef418323b_640.jpg" alt="Delitzsch"><div class="branch-body"><div class="branch-name">Delitzsch · Eilenburg</div><div class="branch-region">Nordsachsen · René Anscheit</div><div class="branch-detail">Tel: 0341 – 904 79 71<br>rene.anscheit@leipzig-estate.de</div><a href="https://leipzig-estate.com/taucha/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+      <div class="branch-card"><img class="branch-img" src="https://leipzig-estate.com/wp-content/uploads/2023/03/Unbenannt-1-300x200.png" alt="Grimma"><div class="branch-body"><div class="branch-name">Grimma · Wurzen</div><div class="branch-region">Landkreis Leipzig Ost · Carolin Slowikowski</div><div class="branch-detail">Tel: 0178 – 414 23 13<br>carolin.slowikowski@leipzig-estate.de</div><a href="https://leipzig-estate.com/groitzsch/" target="_blank" class="branch-link">Filialseite →</a></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ÜBER UNS ══ -->
+<div id="section-about" class="page-section">
+  <div class="about-section">
+    <div class="section-header" style="background:transparent">
+      <p class="section-tag">Wir über uns</p>
+      <h2 class="section-title">Vertrauen seit 1998</h2>
+      <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line r"></div></div>
+    </div>
+    <div class="about-inner">
+      <div class="about-text">
+        <h3>Ihre Immobilienexperten in Leipzig und Umgebung</h3>
+        <p>Seit 1998 sind wir – <em>ehemals RE/MAX Leipzig</em> – erfolgreich in Leipzig und der gesamten Region Sachsen tätig. Mit umfassender Marktkenntnis haben wir zahlreiche Immobilienverkäufe begleitet und Wohnungen vermittelt.</p>
+        <p>Zum Jahresbeginn 2025 führt die <em>LEIPZIG | estate GbR</em> unter Leitung von Ivonne Tews das Unternehmen mit gewohnter Qualität und Verlässlichkeit weiter.</p>
+        <p>Im Mittelpunkt unserer Arbeit stehen <em>Transparenz, Fairness und Markterfahrung</em>. Wir schaffen Win/Win-Situationen für alle Beteiligten.</p>
+        <div class="ivd-row"><img src="https://leipzig-estate.com/wp-content/uploads/elementor/thumbs/ivd-owsw8wct0h6d3wcoc8ql2xg52t1supi286pssuybas.jpg" alt="IVD"><span>Mitglied im Immobilienverband Deutschland IVD – für geprüfte Qualität und Seriosität.</span></div>
+      </div>
+      <div>
+        <div class="about-stats">
+          <div class="astat"><div class="astat-num">1998</div><div class="astat-lab">Gegründet</div></div>
+          <div class="astat"><div class="astat-num">47</div><div class="astat-lab">Aktive Objekte</div></div>
+          <div class="astat"><div class="astat-num">8</div><div class="astat-lab">Filialen</div></div>
+          <div class="astat"><div class="astat-num">53 ★</div><div class="astat-lab">Bewertungen</div></div>
+        </div>
+        <div style="margin-top:1.5rem">
+          <p style="font-size:0.68rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.8rem">Weitere Dienstleistungen</p>
+          <ul style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--muted);line-height:2;list-style:none">
+            <li>◈ Hausverwaltung</li><li>◈ Immobilienbewertungen</li><li>◈ Baudienstleistungen</li>
+            <li>◈ Immobilienverrentung</li><li>◈ Service Verkauf &amp; Vermietung</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PHILOSOPHIE ══ -->
+<div id="section-philosophie" class="page-section">
+  <div class="subpage-section">
+    <div class="section-header" style="background:transparent">
+      <p class="section-tag">Unsere Werte</p>
+      <h2 class="section-title">Philosophie</h2>
+      <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line r"></div></div>
+    </div>
+    <div class="subpage-inner">
+      <h3>Transparenz, Fairness, Markterfahrung</h3>
+      <p>Im Mittelpunkt unserer Vermittlung und Betreuung stehen diese drei Werte. Unser Erfolg ist die Schaffung von Win/Win-Situationen für alle Beteiligten – zufriedene Verkäufer und glückliche Käufer.</p>
+      <h3>Unser Anspruch</h3>
+      <p>Dieses Ziel erreichen wir durch umfangreiche Serviceleistungen, welche auf dem Markt nicht alltäglich sind. Wir begleiten unsere Kunden durch den gesamten Prozess – von der ersten Besichtigung bis zur Schlüsselübergabe.</p>
+      <h3>Unsere Stärken</h3>
+      <ul>
+        <li>Über 25 Jahre Marktkenntnis in Leipzig und Sachsen</li>
+        <li>Mitgliedschaft im IVD – geprüfte Qualität und Seriosität</li>
+        <li>Lokale Präsenz mit 8 Filialen in der Region</li>
+        <li>Unabhängige, selbständige Makler mit persönlichem Engagement</li>
+        <li>Transparente Kommunikation und ehrliche Beratung</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FIRMENGESCHICHTE ══ -->
+<div id="section-firmengeschichte" class="page-section">
+  <div class="subpage-section">
+    <div class="section-header" style="background:transparent">
+      <p class="section-tag">Geschichte</p>
+      <h2 class="section-title">Firmengeschichte</h2>
+      <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line r"></div></div>
+    </div>
+    <div class="subpage-inner">
+      <h3>1998 – Die Gründung</h3>
+      <p>Lutz Werner gründet in Leipzig das Immobilienbüro, das als RE/MAX Leipzig zu einer der bekanntesten Adressen für Immobilien in der Region wird. In den folgenden Jahren werden zahlreiche Objekte vermittelt und ein starkes Netzwerk aufgebaut.</p>
+      <h3>2000er Jahre – Wachstum und Expansion</h3>
+      <p>Die Firma wächst stetig. Neue Filialen entstehen in Taucha, Borna, Groitzsch und weiteren Standorten in Sachsen und Sachsen-Anhalt. Das Team erweitert sich um hochqualifizierte Makler und Sachverständige.</p>
+      <h3>2013–2024 – Rebranding und Konsolidierung</h3>
+      <p>Nach dem Ablauf der RE/MAX-Partnerschaft erfolgt das Rebranding zu <em>LEIPZIG | estate</em>. Der Name steht für regionale Verwurzelung und über zwei Jahrzehnte Expertise.</p>
+      <h3>2025 – Ein neues Kapitel</h3>
+      <p>Lutz Werner zieht sich aus der operativen Geschäftsführung zurück. Die LEIPZIG | estate GbR unter der Leitung von Ivonne Tews führt das Unternehmen in gewohnter Qualität weiter. Die Firmengeschichte wird mit neuem Schwung fortgeschrieben.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ KARRIERE ══ -->
+<div id="section-karriere" class="page-section">
+  <div class="subpage-section">
+    <div class="section-header" style="background:transparent">
+      <p class="section-tag">Jetzt bewerben</p>
+      <h2 class="section-title">Karriere bei LEIPZIG | estate</h2>
+      <p class="section-desc">Sie haben Leidenschaft für Immobilien und mögen den Umgang mit Menschen?</p>
+      <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line r"></div></div>
+    </div>
+    <div class="subpage-inner">
+      <h3>Wir suchen Verstärkung</h3>
+      <p>Sie können mit ständig wechselnden Situationen umgehen? Sie möchten als selbständiger Immobilienvermittler in unserem Unternehmen arbeiten und von einem starken Netzwerk profitieren?</p>
+      <h3>Was wir bieten</h3>
+      <ul>
+        <li>Selbständige Tätigkeit mit hoher Flexibilität</li>
+        <li>Nutzung unserer Infrastruktur, Marke und Netzwerke</li>
+        <li>Zugang zu unserem Kundenstamm und unserer Immobiliendatenbank</li>
+        <li>Mentoring durch erfahrene Kollegen</li>
+        <li>Möglichkeit zur eigenen Filiale in Ihrer Region</li>
+      </ul>
+      <div class="karriere-form">
+        <h4>Bewerbung senden</h4>
+        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem">Senden Sie Ihre Unterlagen direkt an <a href="mailto:ivonne.tews@leipzig-estate.de" style="color:var(--gold-dark)">ivonne.tews@leipzig-estate.de</a> oder nutzen Sie das Formular.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div class="cfield" style="--cfield-bg:var(--cream)"><label style="color:var(--muted)">Vorname</label><input type="text" style="background:var(--cream-dark);border:1px solid var(--cream-dark);color:var(--text)"></div>
+          <div class="cfield"><label style="color:var(--muted)">Nachname</label><input type="text" style="background:var(--cream-dark);border:1px solid var(--cream-dark);color:var(--text)"></div>
+          <div class="cfield"><label style="color:var(--muted)">E-Mail</label><input type="email" style="background:var(--cream-dark);border:1px solid var(--cream-dark);color:var(--text)"></div>
+          <div class="cfield"><label style="color:var(--muted)">Telefon</label><input type="tel" style="background:var(--cream-dark);border:1px solid var(--cream-dark);color:var(--text)"></div>
+        </div>
+        <div class="cfield" style="margin-bottom:1rem"><label style="color:var(--muted)">Motivation / Nachricht</label><textarea style="background:var(--cream-dark);border:1px solid var(--cream-dark);color:var(--text);min-height:100px;resize:vertical;width:100%;padding:0.65rem 1rem;font-family:'Jost',sans-serif;font-size:0.85rem;outline:none"></textarea></div>
+        <button class="btn-primary">Bewerbung absenden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ KONTAKT ══ -->
+<div id="section-kontakt" class="page-section">
+  <div class="kontakt-section">
+    <div class="section-header" style="background:transparent">
+      <p class="section-tag" style="color:var(--gold)">Sprechen Sie mit uns</p>
+      <h2 class="section-title" style="color:#fff">Kontakt</h2>
+      <div class="divider" style="margin-top:1.2rem"><div class="div-line" style="background:linear-gradient(to right,transparent,rgba(201,168,76,0.4))"></div><div class="div-diamond" style="border-color:rgba(201,168,76,0.4)"></div><div class="div-line r" style="background:linear-gradient(to left,transparent,rgba(201,168,76,0.4))"></div></div>
+    </div>
+    <div class="kontakt-inner">
+      <div>
+        <div class="kbox" style="margin-bottom:1.5rem">
+          <h3>LEIPZIG | estate</h3>
+          <div class="krow"><span class="klab">Adresse</span><span class="kval">Waldstraße 55, 04105 Leipzig</span></div>
+          <div class="krow"><span class="klab">Telefon</span><span class="kval"><a href="tel:+493419047960">+49 (0) 341 – 904 79 60</a></span></div>
+          <div class="krow"><span class="klab">E-Mail</span><span class="kval"><a href="mailto:info@leipzig-estate.de">info@leipzig-estate.de</a></span></div>
+          <div class="krow"><span class="klab">GF</span><span class="kval">Ivonne Tews</span></div>
+          <div class="krow"><span class="klab">GbR</span><span class="kval">Tews, Ohnesorge, Kupferschmied, Anscheit</span></div>
+          <div class="krow"><span class="klab">IVD</span><span class="kval">Mitglied im Immobilienverband Deutschland</span></div>
+          <div class="krow"><span class="klab">Facebook</span><span class="kval"><a href="https://de-de.facebook.com/LEIPZIGestate" target="_blank">LEIPZIGestate</a></span></div>
+          <div class="krow"><span class="klab">Bewertungen</span><span class="kval"><a href="https://www.makler-empfehlung.de/firmenprofil/30331" target="_blank">53 × ★ auf makler-empfehlung.de</a></span></div>
+        </div>
+        <div class="kbox">
+          <h3>Kontaktformular</h3>
+          <div class="cform">
+            <div class="cform-row">
+              <div class="cfield"><label>Vorname *</label><input type="text" placeholder="Ihr Vorname"></div>
+              <div class="cfield"><label>Nachname *</label><input type="text" placeholder="Ihr Nachname"></div>
+            </div>
+            <div class="cform-row">
+              <div class="cfield"><label>E-Mail *</label><input type="email" placeholder="ihre@email.de"></div>
+              <div class="cfield"><label>Telefon *</label><input type="tel" placeholder="+49 …"></div>
+            </div>
+            <div class="cfield"><label>Wunschtermin für Rückruf</label><input type="text" placeholder="z.B. Mo–Fr, 10–12 Uhr"></div>
+            <div class="cfield"><label>Anliegen</label>
+              <select>
+                <option>Immobilie kaufen</option>
+                <option>Immobilie verkaufen</option>
+                <option>Immobilie mieten</option>
+                <option>Immobilie vermieten</option>
+                <option>Immobilienbewertung</option>
+                <option>Sonstiges</option>
+              </select>
+            </div>
+            <div class="cfield"><label>Nachricht</label><textarea placeholder="Ihre Nachricht an uns…"></textarea></div>
+            <button class="cform-btn">Nachricht senden</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="kmap">
+          <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=12.3476,51.3391,12.3676,51.3491&layer=mapnik&marker=51.3441,12.3576" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <div style="margin-top:1.5rem;padding:1.5rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+          <p style="font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:0.8rem">Rechtliches</p>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap">
+            <a href="https://leipzig-estate.com/impressum/" target="_blank" style="font-size:0.78rem;color:rgba(255,255,255,0.45);text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#e2c47a'" onmouseout="this.style.color='rgba(255,255,255,0.45)'">Impressum</a>
+            <a href="https://leipzig-estate.com/datenschutzhinweise/" target="_blank" style="font-size:0.78rem;color:rgba(255,255,255,0.45);text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#e2c47a'" onmouseout="this.style.color='rgba(255,255,255,0.45)'">Datenschutz</a>
+            <a href="https://leipzig-estate.com/sitemap/" target="_blank" style="font-size:0.78rem;color:rgba(255,255,255,0.45);text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#e2c47a'" onmouseout="this.style.color='rgba(255,255,255,0.45)'">Sitemap</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROPERTY DETAIL ══ -->
+<div id="section-propdetail" class="page-section">
+  <div style="padding:7rem 2rem 5rem;max-width:1100px;margin:0 auto" id="pd-content"></div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-top">
+      <div>
+        <div class="foot-brand">LEIPZIG <span>|</span> estate</div>
+        <div class="foot-tagline">Ihre Immobilienexperten · Seit 1998</div>
+        <p class="foot-desc">Waldstraße 55 · 04105 Leipzig<br>Tel: +49 (0) 341 – 904 79 60<br>info@Leipzig-estate.de</p>
+      </div>
+      <div>
+        <div class="foot-col-title">Navigation</div>
+        <div class="foot-col">
+          <a href="#" onclick="return showSection('home')">Home</a>
+          <a href="#" onclick="return showSection('immobilien')">Immobilien</a>
+          <a href="#" onclick="return showSection('about')">Über Uns</a>
+          <a href="#" onclick="return showSection('team')">Team</a>
+          <a href="#" onclick="return showSection('kontakt')">Kontakt</a>
+        </div>
+      </div>
+      <div>
+        <div class="foot-col-title">Niederlassungen</div>
+        <div class="foot-col">
+          <a href="https://leipzig-estate.com/leipzig/" target="_blank">Leipzig</a>
+          <a href="https://leipzig-estate.com/taucha/" target="_blank">Taucha</a>
+          <a href="https://leipzig-estate.com/borna/" target="_blank">Borna</a>
+          <a href="https://leipzig-estate.com/groitzsch/" target="_blank">Groitzsch · Lucka</a>
+          <a href="https://leipzig-estate.com/bad-duerrenberg/" target="_blank">Bad Dürrenberg</a>
+          <a href="https://leipzig-estate.com/torgau/" target="_blank">Torgau · Jessen</a>
+        </div>
+      </div>
+      <div>
+        <div class="foot-col-title">Rechtliches</div>
+        <div class="foot-col">
+          <a href="https://leipzig-estate.com/impressum/" target="_blank">Impressum</a>
+          <a href="https://leipzig-estate.com/datenschutzhinweise/" target="_blank">Datenschutz</a>
+          <a href="https://leipzig-estate.com/sitemap/" target="_blank">Sitemap</a>
+          <a href="https://de-de.facebook.com/LEIPZIGestate" target="_blank">Facebook</a>
+          <a href="https://www.makler-empfehlung.de/firmenprofil/30331" target="_blank">Bewertungen</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span class="foot-copy">© 2025 LEIPZIG | estate – Tews, Ohnesorge, Kupferschmied, Anscheit GbR · Mitglied im IVD</span>
+      <div class="foot-legal">
+        <a href="https://leipzig-estate.com/impressum/" target="_blank">Impressum</a>
+        <a href="https://leipzig-estate.com/datenschutzhinweise/" target="_blank">Datenschutz</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>60));
+
+function showSection(id){
+  document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  const lnk=document.getElementById('nav-'+id);
+  if(lnk)lnk.classList.add('active');
+  nav.classList.toggle('on-page',id!=='home');
+  nav.classList.remove('scrolled');
+  window.scrollTo({top:0,behavior:'smooth'});
+  setTimeout(reveal,150);
+  if(id==='immobilien'){setTimeout(initMaps,400);}
+  return false;
+}
+
+// Hero slider
+const slides=document.querySelectorAll('.hero-slide');
+let cur=0;
+setInterval(()=>{slides[cur].classList.remove('active');cur=(cur+1)%slides.length;slides[cur].classList.add('active');},5000);
+
+// Props data
+const props=[
+  {id:'9879',title:'Freistehendes EFH in Markkleeberg',type:'haus',art:'kauf',ort:'Markkleeberg',lat:51.2886,lng:12.3749,zimmer:6,flaeche:176,preis:'699.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9879/feef327e-b477-4ca8-9db2-82d98bf9eb57.jpg@600x',badge:'',url:'https://leipzig-estate.com/immobilien-details/9879-freistehendes-efh-in-markkleeberg-6/'},
+  {id:'9653',title:'Bezahlbares Einfamilienhaus, bezugsfertig',type:'haus',art:'kauf',ort:'Belgershain / Köhra',lat:51.2654,lng:12.5312,zimmer:4,grundstueck:211,preis:'199.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9653/b4f903fb-0016-4d7f-b221-8f01eb75fea4.jpg@600x',badge:'',url:'https://leipzig-estate.com/immobilien-details/9653-das-bezahlbare-einfamilienhaus-bezugsfertig/'},
+  {id:'9697',title:'Helle Altbauwohnung mit Balkon, hist. Dielen',type:'wohnung',art:'kauf',ort:'Leipzig / Möckern',lat:51.3608,lng:12.3587,zimmer:3,flaeche:77,preis:'220.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9697/8b4def45-cf50-47d5-968c-c61f54cdc6e0.jpg@600x',badge:'courtagefrei',url:'https://leipzig-estate.com/immobilien-details/9697-helle-altbauwohnung-mit-balkon-org/'},
+  {id:'9715',title:'Großzügige 4-Raum-Wohnung im Gründerzeitgebäude',type:'wohnung',art:'kauf',ort:'Leipzig / Zentrum-Nordwest',lat:51.3458,lng:12.3590,zimmer:4,flaeche:147,preis:'549.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9715/e372e0af-257b-4138-bd8a-500686b5239a.jpg@600x',badge:'exklusiv',url:'https://leipzig-estate.com/immobilien-details/9715-grosszuegige-4-raumwohnung-im-gruenderzeitgebaeude/'},
+  {id:'9329',title:'5,1% Rendite im schönen Dreifamilienhaus',type:'haus',art:'kauf',ort:'Lucka',lat:51.0889,lng:12.3289,zimmer:12,flaeche:214,preis:'295.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9329/f5b35381-0b65-4088-ab94-2d4b6c2bd6ea.jpg@600x',badge:'',url:'https://leipzig-estate.com/immobilien-details/9329-51-rendite-im-schoenen-dreifamilienhaus/'},
+  {id:'9579',title:'7,4% Rendite – saniertes Stadthaus im Zentrum',type:'haus',art:'kauf',ort:'Groitzsch',lat:51.1573,lng:12.2725,zimmer:12,flaeche:252,preis:'281.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9579/c2f40da8-9cd3-48c9-b003-5d5e41cf31d5.jpg@600x',badge:'',url:'https://leipzig-estate.com/immobilien-details/9579-74-rendite-saniertes-stadthaus-im/'},
+  {id:'9863',title:'4-Zi. Maisonettewohnung mit Wintergarten',type:'wohnung',art:'kauf',ort:'Leipzig / Eutritzsch',lat:51.3644,lng:12.3866,zimmer:4,flaeche:110,preis:'330.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9863/Titelbild_243051.jpg@600x',badge:'exklusiv',url:'https://leipzig-estate.com/immobilien-details/9863-schoene-und-gepflegte-4-zimmer/'},
+  {id:'9771',title:'Charmantes Sanierungsobjekt in dörflicher Lage',type:'haus',art:'kauf',ort:'Delitzsch / Mocherwitz',lat:51.5282,lng:12.3336,zimmer:6,flaeche:216,grundstueck:3621,preis:'225.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9771/1dca8788-1e8e-4c69-95fe-7b3b0a124ac5.jpg@600x',badge:'neu',url:'https://leipzig-estate.com/immobilien-details/9771-charmantes-sanierungsobjekt-in-doerfl-lage/'},
+  {id:'9601',title:'2,5 Zimmer mit Westbalkon im Altbau',type:'wohnung',art:'miete',ort:'Leipzig',lat:51.3397,lng:12.3731,zimmer:2.5,flaeche:63,preis:'595 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9601/Titelbild_234675.jpg@600x',badge:'neu',url:'https://leipzig-estate.com/immobilien-details/9601-25-zimmer-mit-westbalkon-im/'},
+  {id:'8611',title:'5-Zi. Wohnung mit zwei Bädern im Altbau',type:'wohnung',art:'miete',ort:'Leipzig / Volkmarsdorf',lat:51.3300,lng:12.4009,zimmer:5,flaeche:105,preis:'840 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/8611/4ec0ce54-6c9d-487e-89cb-94fadfc85a13.jpg@600x',badge:'exklusiv',url:'https://leipzig-estate.com/immobilien-details/8611-5-zimmer-wohnung-mit-zwei/'},
+  {id:'9649',title:'Saniertes Reihenmittelhaus mit Garten',type:'haus',art:'miete',ort:'Kabelsketal',lat:51.3897,lng:12.1681,zimmer:5,flaeche:114,preis:'1.142 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9649/_236475.jpg@600x',badge:'exklusiv',url:'https://leipzig-estate.com/immobilien-details/9649-grosszuegig-geschnittenes-und-neu-saniertes/'},
+  {id:'9389',title:'Zentrumsnahe Büroetage 225 m²',type:'buero',art:'miete',ort:'Leipzig',lat:51.3410,lng:12.3750,zimmer:9,flaeche:225,preis:'2.136 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9389/f6a22817-7093-4b60-99b5-db0936b58ae6.jpg@600x',badge:'neu',url:'https://leipzig-estate.com/immobilien-details/9389-zentrumsnahe-bueroetage-22555qm-empfang-5/'},
+  {id:'9391',title:'TOP Zahnarztpraxis – leerstehend verfügbar',type:'buero',art:'miete',ort:'Grimma',lat:51.2347,lng:12.7194,zimmer:3,preis:'850 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9391/IMG-20240220-WA0041.jpg@600x',badge:'exklusiv',url:'https://leipzig-estate.com/immobilien-details/9391-top-zahnarztpraxis-ab-sofort-auf/'},
+  {id:'9819',title:'2.905 m² Bauland, teilbar – Nempitz',type:'grundstueck',art:'kauf',ort:'Bad Dürrenberg / Nempitz',lat:51.3519,lng:12.0606,grundstueck:2905,preis:'190.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9819/_241935.jpg@600x',badge:'neu',url:'https://leipzig-estate.com/immobilien-details/9819-2-905-qm-nach-b/'},
+  {id:'9045',title:'Zwischen 2 Seen – Bauträgerfrei',type:'grundstueck',art:'kauf',ort:'Groitzsch / Hemmendorf',lat:51.1573,lng:12.2725,grundstueck:1262,preis:'88.300 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9045/1f036102-57be-4495-aa90-0572fb7bee72.jpg@600x',badge:'',url:'https://leipzig-estate.com/immobilien-details/9045-im-suedraum-von-leipzig-zwischen/'},
+  {id:'9767',title:'Dachgarten direkt im Zentrum von Grimma',type:'wohnung',art:'miete',ort:'Grimma',lat:51.2347,lng:12.7194,zimmer:4,flaeche:132,preis:'1.456 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9767/e944613d-4da9-4ee6-b323-318e4cc3c638.jpg@600x',badge:'exklusiv',url:'https://leipzig-estate.com/immobilien-details/9767-dachgarten-direkt-im-zentrum-von/'},
+  {id:'9831',title:'2-Zi. Dachwohnung mit Balkon – Leipzig West',type:'wohnung',art:'miete',ort:'Leipzig / Großzschocher',lat:51.3031,lng:12.3186,zimmer:2,flaeche:69,preis:'650 €/mo',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9831/31a12f05-e9c2-4f3e-95ef-6e92363d2160.jpg@600x',badge:'neu',url:'https://leipzig-estate.com/immobilien-details/9831-geraeumige-2-zimmer-dachwohnung-mit/'},
+  {id:'9869',title:'Familienfreundliche Wohnung Markkleeberg-Mitte',type:'wohnung',art:'kauf',ort:'Markkleeberg',lat:51.2886,lng:12.3749,zimmer:4,flaeche:92,preis:'285.000 €',img:'https://image.onoffice.de/smart20/Objekte/remaxleipzig/9869/30a6b643-5ec8-4711-b266-8673c044b5a1.jpg@600x',badge:'neu',url:'https://leipzig-estate.com/immobilien-details/9869-familienfreundliche-wohnung-in-markkleeberg-mitte/'},
+];
+
+function propCard(p){
+  const artLab=p.art==='kauf'?'Kauf':'Miete';
+  const artCls=p.art==='kauf'?'pk':'pm';
+  const b2=p.badge==='neu'?'<span class="pbadge2 pneu">Neu</span>':p.badge==='exklusiv'?'<span class="pbadge2 pex">Exklusiv</span>':p.badge==='courtagefrei'?'<span class="pbadge2 pneu">Courtagefrei</span>':'';
+  const typLab={haus:'Haus',wohnung:'Wohnung',buero:'Büro / Gewerbe',grundstueck:'Grundstück'}[p.type]||p.type;
+  let meta='';
+  if(p.zimmer)meta+=`<div class="pmi"><div class="pmi-val">${p.zimmer}</div><div class="pmi-lab">Zimmer</div></div>`;
+  if(p.flaeche)meta+=`<div class="pmi"><div class="pmi-val">${p.flaeche} m²</div><div class="pmi-lab">Fläche</div></div>`;
+  if(p.grundstueck)meta+=`<div class="pmi"><div class="pmi-val">${p.grundstueck} m²</div><div class="pmi-lab">Grundstück</div></div>`;
+  meta+=`<div class="pmi pprice"><div class="pprice-val">${p.preis}</div><div class="pmi-lab">${artLab}</div></div>`;
+  return`<div class="prop-card" data-art="${p.art}" data-type="${p.type}" onclick="openProp('${p.id}')" style="cursor:pointer">
+    <div class="prop-img"><img src="${p.img}" alt="${p.title}" loading="lazy"><span class="pbadge ${artCls}">${artLab}</span>${b2}</div>
+    <div class="prop-body"><div class="prop-type">${typLab}</div><h3 class="prop-title">${p.title}</h3><div class="prop-loc">${p.ort}</div><div class="prop-meta">${meta}</div></div>
+  </div>`;
+}
+
+document.getElementById('featured-grid').innerHTML=props.slice(0,6).map(propCard).join('');
+
+function renderProps(){
+  const a=document.getElementById('fa')?.value||'all';
+  const t=document.getElementById('ft')?.value||'all';
+  const f=props.filter(p=>(a==='all'||p.art===a)&&(t==='all'||p.type===t));
+  document.getElementById('all-grid').innerHTML=f.map(propCard).join('');
+  document.getElementById('pcount').textContent=f.length+' Immobilien gefunden';
+  setTimeout(reveal,50);
+}
+renderProps();
+
+// Reveal on scroll
+function reveal(){
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*55);io.unobserve(e.target);}});
+  },{threshold:0.07});
+  document.querySelectorAll('.prop-card:not(.visible),.team-card:not(.visible),.branch-card:not(.visible)').forEach(el=>io.observe(el));
+}
+reveal();
+
+// MAP
+let propMapInst=null,branchMapInst=null,mapsInited=false;
+function initMaps(){
+  if(mapsInited)return;
+  mapsInited=true;
+
+  const goldIcon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;background:#c9a84c;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+  const branchIcon=L.divIcon({className:'',html:`<div style="width:18px;height:18px;background:#0d1b2a;border:2px solid #c9a84c;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
+
+  // Property map
+  propMapInst=L.map('prop-map',{scrollWheelZoom:true}).setView([51.32,12.45],9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(propMapInst);
+  props.forEach(p=>{
+    const m=L.marker([p.lat,p.lng],{icon:goldIcon}).addTo(propMapInst);
+    m.bindPopup(`<div class="popup-title">${p.title}</div><div class="popup-branch-sub">${p.ort}</div><div class="popup-price" style="margin-top:4px">${p.preis}</div><br><a href="#" onclick="event.preventDefault();openProp('${p.id}')" style="color:#9a7a2e;font-size:11px;font-weight:500;text-decoration:none">Details ansehen →</a>`);
+    m.on('click',()=>m.openPopup());
+  });
+
+  // Branch map
+  const branches=[
+    {name:'Leipzig',sub:'Waldstraße 55, 04105 Leipzig',lat:51.3441,lng:12.3576,url:'https://leipzig-estate.com/leipzig/'},
+    {name:'Taucha',sub:'Jan Ohnesorge',lat:51.3614,lng:12.4956,url:'https://leipzig-estate.com/taucha/'},
+    {name:'Borna',sub:'Landkreis Leipzig Süd',lat:51.1231,lng:12.4969,url:'https://leipzig-estate.com/borna/'},
+    {name:'Groitzsch · Lucka · Meuselwitz',sub:'Altenburger Land',lat:51.1573,lng:12.2725,url:'https://leipzig-estate.com/groitzsch/'},
+    {name:'Bad Dürrenberg',sub:'Saalekreis, Sachsen-Anhalt',lat:51.3074,lng:11.9656,url:'https://leipzig-estate.com/bad-duerrenberg/'},
+    {name:'Torgau · Jessen',sub:'Nordsachsen · Wittenberg',lat:51.5619,lng:13.0089,url:'https://leipzig-estate.com/torgau/'},
+    {name:'Delitzsch · Eilenburg',sub:'René Anscheit',lat:51.5282,lng:12.3336,url:'https://leipzig-estate.com/taucha/'},
+    {name:'Grimma · Wurzen',sub:'Carolin Slowikowski',lat:51.2347,lng:12.7194,url:'https://leipzig-estate.com/groitzsch/'},
+  ];
+  branchMapInst=L.map('branch-map',{scrollWheelZoom:true}).setView([51.32,12.55],9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(branchMapInst);
+  branches.forEach(b=>{
+    L.marker([b.lat,b.lng],{icon:branchIcon}).addTo(branchMapInst)
+      .bindPopup(`<div class="popup-branch">${b.name}</div><div class="popup-branch-sub">${b.sub}</div><a href="${b.url}" target="_blank" style="color:#9a7a2e;font-size:11px;text-decoration:none">Filialseite →</a>`);
+  });
+}
+
+function toggleMap(type,btn){
+  document.querySelectorAll('.map-toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(type==='prop'){
+    document.getElementById('prop-map').style.display='block';
+    document.getElementById('branch-map').style.display='none';
+    if(propMapInst)propMapInst.invalidateSize();
+  }else{
+    document.getElementById('prop-map').style.display='none';
+    document.getElementById('branch-map').style.display='block';
+    if(branchMapInst)branchMapInst.invalidateSize();
+  }
+}// Property detail descriptions
+const propDesc={
+  '9879':'Dieses freistehende Einfamilienhaus in der begehrten Wohnlage Markkleeberg überzeugt durch großzügige Raumaufteilung und einen gepflegten Gartenbereich. Das Objekt befindet sich in einem sehr guten Zustand und bietet auf 176 m² Wohnfläche Platz für die ganze Familie. Die ruhige Lage, nur wenige Minuten vom Cospudener See entfernt, verbindet naturnahes Wohnen mit optimaler Anbindung an Leipzig.',
+  '9653':'Dieses bezugsfertige Reihenmittelhaus in Belgershain / Köhra bietet modernes Wohnen zu einem attraktiven Preis. Auf einem 211 m² Grundstück entstand ein Haus mit durchdachter Raumaufteilung, das keine Wünsche offenlässt. Ideal für junge Familien, die Wert auf Qualität und Wirtschaftlichkeit legen.',
+  '9697':'Diese helle Altbauwohnung im begehrten Stadtteil Möckern besticht durch original historische Dielen, gespachtelte Wände und hohe Decken. Mit Balkon und 77 m² Wohnfläche bietet sie 3 Zimmer und einen herrlichen Altbaucharme, der in dieser Form selten zu finden ist. Die Wohnung ist courtagefrei und sofort verfügbar.',
+  '9715':'Eine der schönsten Wohnungen Leipzigs: 147 m² im repräsentativen Gründerzeitgebäude, nur 950 Meter vom Stadtzentrum entfernt. Vier großzügige Zimmer mit stuckverzierten Decken, Parkett und Altbaucharme der Extraklasse. Exklusiv und selten – in diesem Zustand und zu diesem Preis eine absolute Rarität auf dem Leipziger Markt.',
+  '9329':'Hervorragende Kapitalanlage mit 5,1% Rendite im schönen Dreifamilienhaus in Lucka. Das Objekt mit 12 Zimmern und 214 m² Wohnfläche auf 507 m² Grundstück ist vollständig vermietet und erzielt stabile Einnahmen. Ideal für Investoren, die auf langfristige Sicherheit setzen.',
+  '9579':'Saniertes Stadthaus mit einer beeindruckenden Rendite von 7,4% in der Stadtmitte von Groitzsch. 12 Zimmer, 252 m² Wohnfläche, vollständig modernisiert. Ein seltenes Angebot für renditeorientierte Investoren in einer aufstrebenden Region.',
+  '9863':'Traumhafte 4-Zimmer-Maisonettewohnung im Dachgeschoss mit privatem Wintergarten in Leipzig-Eutritzsch. 110 m² Wohnfläche auf zwei Ebenen, frisch renoviert, mit zwei Bädern und Einbauküche. Exklusiv und sofort bezugsbereit.',
+  '9771':'Charmantes Sanierungsobjekt in dörflicher Lage bei Delitzsch – 6 Zimmer, 216 m² Wohnfläche auf 3.621 m² Grundstück. Nur 15 km vor den Toren Leipzigs, ideal für Liebhaber des Landlebens oder als Entwicklungsprojekt mit großem Potenzial.',
+  '9601':'Stilvolle 2,5-Zimmer-Wohnung mit Westbalkon im kernsanierten Altbau in Leipzig. 63 m² Wohnfläche, frisch renoviert, mit Laminat und modernem Bad. Frei ab 01.07.2026. Perfekt für Singles oder Paare, die Altbaucharme mit modernem Komfort verbinden möchten.',
+  '8611':'Großzügige 5-Zimmer-Wohnung mit zwei Bädern im sanierten Altbau in Leipzig-Volkmarsdorf. 105 m² Wohnfläche, repräsentatives Treppenhaus, ruhige Seitenstraße. Exklusiv verfügbar – ideal für Familien oder als hochwertige Kapitalanlage.',
+  '9649':'Großzügig geschnittenes und neu saniertes Reihenmittelhaus in Kabelsketal mit 114 m² Wohnfläche und privatem Garten. 5 Zimmer, modernes Badezimmer, neue Heizung. Ruhige Wohnlage mit direkter Anbindung an Leipzig. Ideal für Familien.',
+  '9389':'Repräsentative zentrumsnahe Büroetage in Leipzig: 225,55 m², Empfang + 5 Büros + 42 m² Besprechungsraum, Fahrstuhl, sofort verfügbar. Ideal für Kanzleien, Beratungsunternehmen oder wachsende Teams. Hervorragende Lage mit ÖPNV-Anbindung.',
+  '9391':'Top-ausgestattete Zahnarztpraxis in Grimma mit 3 Behandlungsräumen, auf Wunsch auch leerstehend verfügbar. Die Praxisfläche kann ohne Umbau sofort in Betrieb genommen werden. Ausgezeichnete Lage in der Innenstadt.',
+  '9819':'2.905 m² Bauland nach B-Plan in dörflicher Lage, zentral im Ballungsraum Halle/Leipzig, teilbar. Idealer Standort für ein Einfamilienhaus oder eine Bebauung mit bis zu drei Einheiten. Erschlossen und baureif.',
+  '9045':'Naturnahes Baugrundstück im Südraum Leipzig zwischen zwei Seen – 1.262 m², bauträgerfrei, sofort bebaubar. Einmaliger Naturblick, nur 20 Minuten von Leipzig-Mitte entfernt.',
+  '9767':'Außergewöhnliche 4-Zimmer-Wohnung mit privatem Dachgarten direkt im Zentrum von Grimma. 132 m² Wohnfläche, Neubaustandard, panoramischer Ausblick über die Altstadt. Exklusiver geht es kaum.',
+  '9831':'Geräumige 2-Zimmer-Dachwohnung mit Balkon und Einbauküche in Leipzig-West. 69 m² Wohnfläche, neuwertig renoviert, helle Räume mit Dachschrägen. Sofort verfügbar. Ideal für Singles oder Paare.',
+  '9869':'Familienfreundliche 4-Zimmer-Wohnung in zentraler Lage von Markkleeberg-Mitte. 92 m² Wohnfläche, modernes Bad, ruhige Wohnanlage mit Grünflächen. Schulen, Kitas und Einkaufsmöglichkeiten fußläufig erreichbar.',
+};
+
+function openProp(id){
+  const p=props.find(x=>x.id===id);
+  if(!p)return;
+  const artLab=p.art==='kauf'?'Kauf':'Miete';
+  const artCls=p.art==='kauf'?'pd-badge-art':'pd-badge-special';
+  const typLab={haus:'Haus',wohnung:'Wohnung',buero:'Büro / Gewerbe',grundstueck:'Grundstück'}[p.type]||p.type;
+  let statsHtml='';
+  if(p.zimmer)statsHtml+=`<div class="pd-stat"><div class="pd-stat-val">${p.zimmer}</div><div class="pd-stat-lab">Zimmer</div></div>`;
+  if(p.flaeche)statsHtml+=`<div class="pd-stat"><div class="pd-stat-val">${p.flaeche} m²</div><div class="pd-stat-lab">Wohnfläche</div></div>`;
+  if(p.grundstueck)statsHtml+=`<div class="pd-stat"><div class="pd-stat-val">${p.grundstueck} m²</div><div class="pd-stat-lab">Grundstück</div></div>`;
+  if(!p.zimmer&&!p.flaeche&&!p.grundstueck)statsHtml=`<div class="pd-stat"><div class="pd-stat-val">—</div><div class="pd-stat-lab">Details</div></div>`;
+  const desc=propDesc[id]||'Weitere Details zu diesem Objekt erfragen Sie gerne bei unserem Team. Wir beraten Sie persönlich und kostenlos.';
+  const badgeSpecial=p.badge==='exklusiv'?'<span class="pd-badge pd-badge-special">Exklusiv</span>':p.badge==='neu'?'<span class="pd-badge" style="background:var(--cream-dark);color:var(--navy)">Neu</span>':p.badge==='courtagefrei'?'<span class="pd-badge" style="background:#e8f5e9;color:#2e7d32">Courtagefrei</span>':'';
+
+  document.getElementById('pd-content').innerHTML=`
+    <button class="pd-back" onclick="history.back()">← Zurück zur Übersicht</button>
+    <div class="pd-hero">
+      <div>
+        <img class="pd-img-main" src="${p.img}" alt="${p.title}">
+      </div>
+      <div class="pd-sidebar">
+        <div class="pd-badge-row">
+          <span class="pd-badge ${artCls}">${artLab}</span>
+          <span class="pd-badge pd-badge-type">${typLab}</span>
+          ${badgeSpecial}
+        </div>
+        <div>
+          <div class="pd-price">${p.preis}</div>
+          <div class="pd-price-label">${artLab}spreis</div>
+        </div>
+        <h1 class="pd-title">${p.title}</h1>
+        <div class="pd-loc">${p.ort}</div>
+        <div class="pd-stats">${statsHtml}</div>
+        <div class="pd-cta-row">
+          <button class="btn-primary" onclick="document.getElementById('pd-form-name').focus()" style="width:100%;text-align:center">Jetzt anfragen</button>
+          <a class="btn-ext" href="${p.url}" target="_blank">Offizielles Listing ansehen ↗</a>
+        </div>
+      </div>
+    </div>
+    <div class="pd-body">
+      <div class="pd-desc">
+        <h3>Objektbeschreibung</h3>
+        <p>${desc}</p>
+        <p style="font-family:'Jost',sans-serif;font-size:0.78rem;color:var(--muted);margin-top:0.5rem">Objektnummer: LE-${p.id} · Standort: ${p.ort}</p>
+      </div>
+      <div>
+        <div class="pd-details">
+          <h3>Objektdetails</h3>
+          <div class="pd-detail-row"><span class="pd-detail-label">Vermarktungsart</span><span class="pd-detail-val">${artLab}</span></div>
+          <div class="pd-detail-row"><span class="pd-detail-label">Objektart</span><span class="pd-detail-val">${typLab}</span></div>
+          <div class="pd-detail-row"><span class="pd-detail-label">Standort</span><span class="pd-detail-val">${p.ort}</span></div>
+          ${p.zimmer?`<div class="pd-detail-row"><span class="pd-detail-label">Zimmer</span><span class="pd-detail-val">${p.zimmer}</span></div>`:''}
+          ${p.flaeche?`<div class="pd-detail-row"><span class="pd-detail-label">Wohnfläche</span><span class="pd-detail-val">${p.flaeche} m²</span></div>`:''}
+          ${p.grundstueck?`<div class="pd-detail-row"><span class="pd-detail-label">Grundstück</span><span class="pd-detail-val">${p.grundstueck} m²</span></div>`:''}
+          <div class="pd-detail-row"><span class="pd-detail-label">Preis</span><span class="pd-detail-val" style="color:var(--gold-dark)">${p.preis}</span></div>
+          <div class="pd-detail-row"><span class="pd-detail-label">Makler</span><span class="pd-detail-val">LEIPZIG | estate</span></div>
+        </div>
+        <div class="pd-contact">
+          <h3>Anfrage zu diesem Objekt</h3>
+          <div style="display:flex;flex-direction:column;gap:0.8rem">
+            <div class="cfield"><label>Name</label><input type="text" id="pd-form-name" placeholder="Ihr vollständiger Name" value="Interesse an: ${p.title.substring(0,30)}…" readonly style="font-size:0.75rem;color:rgba(255,255,255,0.5)"></div>
+            <div class="cfield"><label>Ihr Name</label><input type="text" placeholder="Vor- und Nachname"></div>
+            <div class="cfield"><label>Telefon</label><input type="tel" placeholder="+49 …"></div>
+            <div class="cfield"><label>Nachricht</label><textarea placeholder="Ihre Fragen zum Objekt…"></textarea></div>
+            <button class="btn-primary" style="width:100%;text-align:center">Anfrage senden</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Switch to detail section
+  document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('section-propdetail').classList.add('active');
+  nav.classList.add('on-page');
+  nav.classList.remove('scrolled');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Override back button in detail page
+document.addEventListener('click',e=>{
+  if(e.target.closest('.pd-back')){
+    e.preventDefault();
+    showSection('immobilien');
+  }
+});
+</script>
+</html>
